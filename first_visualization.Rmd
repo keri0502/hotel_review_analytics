@@ -15,6 +15,7 @@ require(lubridate)
 require(ggplot2)
 require(readr)
 
+
 reviews <- read_csv("data/reviews.csv")
 users <- read_csv("data/users.csv")
 hotels <- read_csv("data/hotels.csv")
