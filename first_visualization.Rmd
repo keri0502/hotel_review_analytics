@@ -192,15 +192,15 @@ scatter_data <- user_review |>
 
 ```{r gender-scatter}
 gender_scatter_facet <- scatter_data |>
-  ggplot(aes(x = score_overall, y = Service_Score, color = user_gender)) +
+  ggplot(aes(x = Service_Score, y = score_overall, color = user_gender)) +
   geom_point(alpha = 0.1, size = 0.5) +
   geom_smooth(method = "lm", se = FALSE, linewidth = 0.6) +
   facet_grid(~Service_Type, scales = "fixed") +
   scale_color_brewer(palette = "Set1") +
   labs(
     title = "Linear Sensitivity of Scores by Gender",
-    x = "Score Overall",
-    y = "Service Score",
+    x = "Service Score",
+    y = "Score Overall",
     color = "Gender"
   ) +
   theme(
@@ -246,15 +246,15 @@ The boxplot analysis reveals a high similarity in median scores and variance on 
 
 ```{r age-scatter}
 age_scatter_facet <- scatter_data |>
-  ggplot(aes(x = score_overall, y = Service_Score, color = age_group)) +
+  ggplot(aes(x = Service_Score, y = score_overall, color = age_group)) +
   geom_point(alpha = 0.1, size = 0.5) +
   geom_smooth(method = "lm", se = FALSE, linewidth = 0.6) +
   facet_grid(~Service_Type, scales = "fixed") +
   scale_color_brewer(palette = "Set1") +
   labs(
     title = "Linear Sensitivity of Scores by Age Group",
-    x = "Score Overall",
-    y = "Service Score",
+    x = "Service Score",
+    y = "Score Overall",
     color = "Age Group"
   ) +
   theme(
@@ -298,20 +298,28 @@ type_boxplot_facet <- score_long |>
 type_boxplot_facet
 ```
 
-Location receives the highest scores across all traveller types, with business travelers rating it exceptionally high. This suggests location is universally valued, but especially critical for business guests who likely prioritize proximity to business districts or transportation hubs.
+Based on the visualization, several insights can be drawn about traveller type differences in hotel satisfaction:
+
+Business travellers give notably low scores for "Value for Money", which might suggest that they feel they are overpaying for what they receive. In contrast, "Location" receives the highest score from this group, likely due to the importance of accessibility to business districts and transport for work-related trips.
+
+Couple travellers provide higher median scores for "Cleanliness" and "Comfort" compared to other groups, which indicating that these two are key factors in their satisfaction.
+
+Families are generally well-satisfied, scoring cleanliness and facilities the highest.They also maintain solid scores for "Staff" and "Value for Money".
+
+Solo travellers rate "Staff" and "Value for Money" relatively high, suggesting that friendly service and cost-effectiveness play crucial roles in their decision-making.
 
 
 ```{r traveller-type-scatter}
 type_scatter_facet <- scatter_data |>
-  ggplot(aes(x = score_overall, y = Service_Score, color = traveller_type)) +
+  ggplot(aes(x = Service_Score, y = score_overall, color = traveller_type)) +
   geom_point(alpha = 0.1, size = 0.5) +
   geom_smooth(method = "lm", se = FALSE, linewidth = 0.6) +
   facet_grid(~Service_Type, scales = "fixed") +
   scale_color_brewer(palette = "Set1") +
   labs(
     title = "Linear Sensitivity of Scores by Traveller Type",
-    x = "Score Overall",
-    y = "Service Score",
+    x = "Service Score",
+    y = "Score Overall",
     color = "Traveller Type"
   ) +
   theme(
@@ -324,3 +332,6 @@ type_scatter_facet <- scatter_data |>
 type_scatter_facet
 ```
 
+The chart shows that sensitivity to service items is generally similar across all traveller types (Business, Couple, Family, Solo). This similarity in slope means that the importance (weight) of most service scores on the overall rating is distributed similarly among all guests.
+
+However, a relatively clear difference is visible for Value for Money: The red line (Business) is notably flatter, while the purple line (Solo), along with the green (Family) and blue (Couple) lines, are all steeper. This suggests that solo travellers (and family and couple travellers) are more sensitive to changes in the Value for Money score, and thus place a higher weight on it when forming their final overall rating, compared to Business travellers.
