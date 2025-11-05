@@ -1,0 +1,325 @@
+---
+title: "First Visualization"
+author: "Group6" 
+output:
+  pdf_document:
+    toc: true
+    number_sections: true
+---
+
+```{r setup, echo=FALSE, message=FALSE, warning=FALSE}
+require(tidyr)
+require(dplyr)
+require(tibble)
+require(lubridate)
+require(ggplot2)
+require(readr)
+setwd("~/Desktop/PBA/Final Project/DB")
+reviews <- read_csv("reviews.csv")
+users <- read_csv("users.csv")
+hotels <- read_csv("hotels.csv")
+user_review <- reviews|>
+  left_join(users, by = "user_id") |>
+  select(user_id, user_gender, country, age_group, traveller_type, review_id, score_overall, score_cleanliness, score_comfort, score_facilities, score_location, score_staff, score_value_for_money)
+```
+
+# Q1. Which specific service component (e.g. staff, room service) has the greatest impact on the overall customer satisfaction?
+
+## Cleanliness
+```{r}
+ggplot(reviews, aes(x = score_cleanliness, y = score_overall)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(x = "score cleanliness",
+       y = "score overall", 
+       title = "Relationship Between Cleanliness and Overall Score")
+
+cor(reviews$score_cleanliness, reviews$score_overall, method = "pearson")
+```
+
+## Comfort
+```{r}
+ggplot(reviews, aes(x = score_comfort, y = score_overall)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(x = "score comfort",
+       y = "score overall", 
+       title = "Relationship Between Comfort and Overall Score")
+
+cor(reviews$score_comfort, reviews$score_overall, method = "pearson")
+```
+
+## Facilities
+```{r}
+ggplot(reviews, aes(x = score_facilities, y = score_overall)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(x = "score facilities",
+       y = "score overall", 
+       title = "Relationship Between Facilities and Overall Score")
+
+cor(reviews$score_facilities, reviews$score_overall, method = "pearson")
+```
+
+## Location
+```{r}
+ggplot(reviews, aes(x = score_location, y = score_overall)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(x = "score location",
+       y = "score overall", 
+       title = "Relationship Between Location and Overall Score")
+
+cor(reviews$score_location, reviews$score_overall, method = "pearson")
+```
+
+## Staff
+```{r}
+ggplot(reviews, aes(x = score_staff, y = score_overall)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(x = "score staff",
+       y = "score overall", 
+       title = "Relationship Between Staff and Overall Score")
+
+cor(reviews$score_staff, reviews$score_overall, method = "pearson")
+```
+
+## Value for Money
+```{r}
+ggplot(reviews, aes(x = score_value_for_money, y = score_overall)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(x = "score value for money",
+       y = "score overall", 
+       title = "Relationship Between Value for Money and Overall Score")
+
+cor(reviews$score_value_for_money, reviews$score_overall, method = "pearson")
+```
+
+Conclusion: Cleanliness has the greatest impact on overall customer satisfaction among all service components examined. With a correlation coefficient of r = 0.544, cleanliness demonstrates a moderate to strong positive relationship with overall satisfaction scores.
+
+
+# Q3. How does demographics (gender, age group of customers) influence review behavior?
+
+## Gender
+```{r data-preparation-boxplot,echo=FALSE, message=FALSE, warning=FALSE}
+score_long <- user_review |>
+  select(user_id,user_gender,age_group,traveller_type,starts_with("score_")) |>
+  pivot_longer(
+    cols = c(score_overall, score_cleanliness, score_comfort, score_facilities, 
+             score_location, score_staff, score_value_for_money),          
+    names_to = "Score_Type",               
+    values_to = "Score_Value",
+    names_prefix = "score_"
+  ) |>
+  mutate(
+    Score_Type = case_when(
+      Score_Type == "overall" ~ "Overall Score",
+      Score_Type == "staff" ~ "Staff",
+      Score_Type == "comfort" ~ "Comfort",
+      Score_Type == "facilities" ~ "Facilities",
+      Score_Type == "location" ~ "Location",
+      Score_Type == "cleanliness" ~ "Cleanliness",
+      Score_Type == "value_for_money" ~ "Value for Money",
+      TRUE ~ Score_Type
+    ),
+    Score_Type = factor(Score_Type, levels = c(
+      "Overall Score",      
+      "Cleanliness",  
+      "Comfort",
+      "Facilities",
+      "Location",
+      "Staff",             
+      "Value for Money"))
+)
+```
+
+```{r gender-boxplot}
+gender_boxplot_facet <- score_long |>
+  ggplot(aes(x = user_gender, y = Score_Value)) +
+  geom_boxplot(aes(fill = user_gender),
+    alpha = 0.6,
+    linewidth = 0.5) + 
+    scale_fill_brewer(
+    palette = "Set1"
+  )+
+  stat_summary(fun = mean, geom = "point", shape = 23, size = 2.5, fill = "white", color = "black") +
+  facet_grid(~Score_Type, scales = "fixed") +
+  labs(
+    title = "Score Distribution and Variance by Gender",
+    x = "",
+    y = "Score_value",
+    fill = "Gender"
+  ) +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold"), 
+    axis.text.x = element_blank(),                       
+    axis.ticks.x = element_blank(),                      
+    panel.grid.major.x = element_blank(),                
+    legend.position = "bottom"                           
+  )
+gender_boxplot_facet
+```
+The boxplot analysis reveals a high similarity in median scores and variance on each service components (e.g., Cleanliness, Staff) for all gender groups.This suggests that gender is not a significant factor determining the absolute level of customer satisfaction or review behavior.
+
+```{r data-preparation-scatter,echo=FALSE, message=FALSE, warning=FALSE}
+scatter_data <- user_review |>
+  select(user_id, user_gender, age_group, traveller_type, score_overall, 
+         score_staff, score_comfort, score_facilities, 
+         score_location, score_cleanliness, score_value_for_money) |>
+  pivot_longer(
+    cols = c(score_cleanliness, score_comfort, score_facilities, 
+             score_location, score_staff, score_value_for_money), 
+    names_to = "Service_Type",            
+    values_to = "Service_Score",
+    names_prefix = "score_"
+  ) |>
+  mutate(
+    Service_Type = case_when(
+      Service_Type == "cleanliness" ~ "Cleanliness",
+      Service_Type == "comfort" ~ "Comfort",
+      Service_Type == "facilities" ~ "Facilities",
+      Service_Type == "location" ~ "Location",
+      Service_Type == "staff" ~ "Staff",
+      Service_Type == "value_for_money" ~ "Value for Money",
+      TRUE ~ Service_Type
+    )
+  )
+
+```
+
+```{r gender-scatter}
+gender_scatter_facet <- scatter_data |>
+  ggplot(aes(x = score_overall, y = Service_Score, color = user_gender)) +
+  geom_point(alpha = 0.1, size = 0.5) +
+  geom_smooth(method = "lm", se = FALSE, linewidth = 0.6) +
+  facet_grid(~Service_Type, scales = "fixed") +
+  scale_color_brewer(palette = "Set1") +
+  labs(
+    title = "Linear Sensitivity of Scores by Gender",
+    x = "Score Overall",
+    y = "Service Score",
+    color = "Gender"
+  ) +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold"), 
+    axis.text.x = element_blank(),                       
+    axis.ticks.x = element_blank(),                      
+    panel.grid.major.x = element_blank(),                
+    legend.position = "bottom"                           
+  )
+gender_scatter_facet
+```
+The scatter plot reveals that gender does not influence service priority or the overall score.
+
+
+## Age Group(18-24, 25-34, 35-44, 45-54, 55+)
+```{r age-boxplot}
+age_boxplot_facet <- score_long |>
+  ggplot(aes(x = age_group, y = Score_Value)) +
+  geom_boxplot(aes(fill = age_group),
+    alpha = 0.6,
+    linewidth = 0.5) + 
+  scale_fill_brewer(
+    palette = "Set1"
+  )+
+  stat_summary(fun = mean, geom = "point", shape = 23, size = 2.5, fill = "white", color = "black") +
+  facet_grid(~Score_Type, scales = "fixed") +
+  labs(
+    title = "Score Distribution and Variance by Age Group",
+    x = "",
+    y = "Score_value",
+    fill = "Age Group"
+  ) +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold"), 
+    axis.text.x = element_blank(),                       
+    axis.ticks.x = element_blank(),                      
+    panel.grid.major.x = element_blank(),                
+    legend.position = "bottom"                           
+  )
+age_boxplot_facet
+```
+The boxplot analysis reveals a high similarity in median scores and variance on each service component (e.g., Cleanliness, Staff) for all age groups.This suggests that age is not a significant factor determining the absolute level of customer satisfaction or review behavior.
+
+```{r age-scatter}
+age_scatter_facet <- scatter_data |>
+  ggplot(aes(x = score_overall, y = Service_Score, color = age_group)) +
+  geom_point(alpha = 0.1, size = 0.5) +
+  geom_smooth(method = "lm", se = FALSE, linewidth = 0.6) +
+  facet_grid(~Service_Type, scales = "fixed") +
+  scale_color_brewer(palette = "Set1") +
+  labs(
+    title = "Linear Sensitivity of Scores by Age Group",
+    x = "Score Overall",
+    y = "Service Score",
+    color = "Age Group"
+  ) +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold"), 
+    axis.text.x = element_blank(),                       
+    axis.ticks.x = element_blank(),                      
+    panel.grid.major.x = element_blank(),                
+    legend.position = "bottom"                           
+  )
+age_scatter_facet
+```
+The scatter plot reveals that age does not influence service priority or the overall score.
+
+# Q4. How do traveler types (Family, Couple, Business) influence review behavior?
+
+## Traveller Type(Business, Couple, Family, Solo)
+```{r traveller-type-boxplot}
+type_boxplot_facet <- score_long |>
+  ggplot(aes(x = traveller_type, y = Score_Value)) +
+  geom_boxplot(aes(fill = traveller_type),
+    alpha = 0.6,
+    linewidth = 0.5) + 
+  scale_fill_brewer(
+    palette = "Set1"
+  )+
+  stat_summary(fun = mean, geom = "point", shape = 23, size = 2.5, fill = "white", color = "black") +
+  facet_grid(~Score_Type, scales = "fixed") +
+  labs(
+    title = "Score Distribution and Variance by Traveller Type",
+    x = "",
+    y = "Score_value",
+    fill = "Traveller Type"
+  ) +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold"), 
+    axis.text.x = element_blank(),                       
+    axis.ticks.x = element_blank(),                      
+    panel.grid.major.x = element_blank(),                
+    legend.position = "bottom"                           
+  )
+type_boxplot_facet
+```
+
+Location receives the highest scores across all traveller types, with business travelers rating it exceptionally high. This suggests location is universally valued, but especially critical for business guests who likely prioritize proximity to business districts or transportation hubs.
+
+
+```{r traveller-type-scatter}
+type_scatter_facet <- scatter_data |>
+  ggplot(aes(x = score_overall, y = Service_Score, color = traveller_type)) +
+  geom_point(alpha = 0.1, size = 0.5) +
+  geom_smooth(method = "lm", se = FALSE, linewidth = 0.6) +
+  facet_grid(~Service_Type, scales = "fixed") +
+  scale_color_brewer(palette = "Set1") +
+  labs(
+    title = "Linear Sensitivity of Scores by Traveller Type",
+    x = "Score Overall",
+    y = "Service Score",
+    color = "Traveller Type"
+  ) +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold"), 
+    axis.text.x = element_blank(),                       
+    axis.ticks.x = element_blank(),                      
+    panel.grid.major.x = element_blank(),                
+    legend.position = "bottom"                           
+  )
+type_scatter_facet
+```
+
