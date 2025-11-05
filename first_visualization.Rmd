@@ -14,10 +14,10 @@ require(tibble)
 require(lubridate)
 require(ggplot2)
 require(readr)
-setwd("~/Desktop/PBA/Final Project/DB")
-reviews <- read_csv("reviews.csv")
-users <- read_csv("users.csv")
-hotels <- read_csv("hotels.csv")
+
+reviews <- read_csv("data/reviews.csv")
+users <- read_csv("data/users.csv")
+hotels <- read_csv("data/hotels.csv")
 user_review <- reviews|>
   left_join(users, by = "user_id") |>
   select(user_id, user_gender, country, age_group, traveller_type, review_id, score_overall, score_cleanliness, score_comfort, score_facilities, score_location, score_staff, score_value_for_money)
