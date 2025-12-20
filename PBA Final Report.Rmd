@@ -1,0 +1,124 @@
+---
+title: "PBA Final Report - Data processing & analysis"
+author: "Group6 - Yichi Tseng (114078513), Ting-Wen Liu (114078518)"
+output:
+  pdf_document:
+    toc: true
+    number_sections: true
+---
+
+```{r setup, include=FALSE}
+require(tidyverse)
+require(infer)
+require(tibble)
+require(ggplot2)
+require(readr)
+require(lmerTest)
+require(performance)
+library(broom.mixed)
+library(knitr)
+```
+
+# Data processing 
+1. Read the data
+```{r}
+exp_data <- read_csv(url("https://drive.google.com/uc?export=download&id=1estf46syRbfG2K8JfW9myfTq2qDp0Ums"))
+```
+2. Select and rename the columns
+```{r}
+df <- exp_data |>
+  select('id', 'treatment', 'hotel1', 'hotel2', 'hotel3') |>
+  pivot_longer(
+    cols = c('hotel1', 'hotel2', 'hotel3'),
+    names_to = 'hotel',
+    values_to = 'score'
+  ) |>
+  mutate(
+    scenario =  case_when(
+      hotel == "hotel1" ~ "negative",
+      hotel == "hotel2" ~ "neutral",
+      hotel == "hotel3" ~ "positive"
+    )
+  )
+df
+```
+3. Check the data completeness
+```{r}
+table(df$id)
+```
+# EDA
+1. Boxplot
+```{r}
+ggplot(df, aes(x = scenario, y = score)) +
+  geom_boxplot() +
+  labs(title = "Hotel Ratings by Scenario")
+```
+
+2. Boxplot with treatment
+```{r}
+ggplot(df, aes(x = scenario, y = score, fill = factor(treatment))) +
+  geom_boxplot(position = position_dodge()) +
+  labs(title = "Hotel Ratings by Scenario", fill = "Treatment") 
+```
+
+# Linear Mixed Model Analysis
+1. Set the 'neutral' scene as the baseline.
+```{r}
+df$treatment <- factor(df$treatment)
+df$scenario  <- factor(df$scenario,
+                        levels = c("neutral", "positive", "negative"))
+```
+
+2. Model
+```{r}
+m1 <- lmer(
+  score ~ treatment * scenario + (1 | id),
+  data = df
+)
+```
+
+3. Statistic summary
+```{r}
+summary(m1)
+```
+
+4. Fixed effect
+```{r}
+tidy_m1 <- tidy(m1, effects = "fixed")
+kable(tidy_m1, digits = 3)
+```
+
+5. Check the Model fit
+```{r}
+r2 <- r2(m1)
+kable(r2, digits = 3)
+```
+
+# Bootstrap resampling for the neutral hotel scenario
+1. Bootstrap
+```{r}
+df_neutral <- df %>% filter(scenario == "neutral")
+ate_boots <- df_neutral |>
+  rep_slice_sample(prop = 1, reps = 1000, replace = TRUE) |>
+  group_by(replicate, treatment) |>
+  summarize(mean_score = mean(score, na.rm = TRUE), .groups = "drop") |>
+  pivot_wider(
+    names_from = treatment,
+    values_from = mean_score
+  ) |>
+  mutate(ate = `1` - `0`);ate_boots
+```
+
+2. Calculate the 95% confidence interval
+```{r} 
+boot_ci <- quantile(ate_boots$ate, c(0.025, 0.975))
+
+boot_ci
+```
+
+3. Visualize the ate distribution
+```{r}
+ggplot(ate_boots, aes(x=ate)) +
+    geom_histogram(aes(y = after_stat(density)), color = "white") +
+    geom_vline(xintercept = unlist(boot_ci), linewidth = 1)
+```
